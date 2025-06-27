@@ -1,0 +1,43 @@
+{
+    "id": "com.adobe.premiere.sendtotechsupport",
+    "name": "Send to Tech Support",
+    "shortname": "sendtotechsupport",
+    "version": "1.0.0",
+    "main": "index.html",
+    "host": [
+      {
+        "app": "premierepro",
+        "minVersion": "25.2.0"
+      }
+    ],
+    "manifestVersion": 5,
+    "requiredPermissions": {
+      "localFileSystem": "request",
+      "clipboard": "readAndWrite"
+    },
+    "entrypoints": [
+      {
+        "id": "sendtotechsupportpanel",
+        "type": "panel",
+        "minimumSize": {
+          "width": 430,
+          "height": 500
+        },
+        "maximumSize": {
+          "width": 2000,
+          "height": 2000
+        },
+        "preferredDockedSize": {
+          "width": 230,
+          "height": 300
+        },
+        "preferredFloatingSize": {
+          "width": 400,
+          "height": 300
+        },
+        "label": {
+          "default": "Send to Tech Support"
+        }
+      }
+    ]
+}
