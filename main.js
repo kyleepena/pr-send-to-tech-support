@@ -313,6 +313,34 @@ async function gatherAndDisplayDetailedInfo() {
               const ppro = require('premierepro');
               const metadata = await ppro.Metadata.getProjectMetadata(clipItem);
               console.log('ProjectItem metadata:', metadata);
+
+              /*  BEN ADDED THIS! */
+              
+              let usedMediaList = new Set(); // Set of used media extensions
+
+              // Get number of Video and Audio tracks to traverse
+              let numVideoTracks = await sequence.getVideoTrackCount();
+              let numAudioTracks = await sequence.getAudioTrackCount();
+
+              // Traverse through each track and build list of media
+              for(let trackNum = 0; trackNum < numVideoTrakcs; i++){  // for each video track
+                let currentVideoTrack = await sequence.getVideoTrack(trackNum);
+                let currentTrackItemsList = await currentVideoTrack.getTrackItems();
+                for(let trackItemNum = 0; trackItemNum < currentTrackItemsList.length, trackItemNum++){ // for each video track item
+                  let projItem = await currentTrackItemsList[trackItemNum].getProjectItem(); // get the project item of the track item
+                  let clipProjItem = await ppro.ClipProjectItem.cast(projItem); // cast the project item to its respective clip project item to get much more data!
+
+                  let filePath = await clipProjItem.getMediaFilePath();
+                  
+                  let splitPath = filePath.split('.')
+                  usedMediaList.add(splitPath.pop()); // add the media file extension to the used media extensions list
+
+                }
+              } 
+
+              var usedMediaListString = Array.from(usedMediaList).join(', ');  // this is sloppily instantiated with var so that it can be used globally later in the UI Rendering 
+              /* --- END BEN STUFF --- */
+
               // You can add parsing here if you see useful info in the logs
             } catch (e) {
               console.log('Error getting ProjectItem metadata:', e);
@@ -331,7 +359,7 @@ async function gatherAndDisplayDetailedInfo() {
   html += `<div class='pp-section'><div class='pp-section-header'>Project</div><ul><li>Name: ${projectName}</li></ul></div>`;
   html += `<div class='pp-section'><div class='pp-section-header'>Sequence Settings</div><ul><li>Name: ${sequenceName}</li><li>Frame Rate: ${sequenceFrameRate}</li><li>Frame Size: ${sequenceFrameSize}</li></ul></div>`;
   html += `<div class='pp-section'><div class='pp-section-header'>Codecs in Sequence</div><ul><li>H.264, ProRes, AAC</li></ul></div>`;
-  html += `<div class='pp-section'><div class='pp-section-header'>Formats in Sequence</div><ul><li>mov, mp4, wav</li></ul></div>`;
+  html += `<div class='pp-section'><div class='pp-section-header'>Formats in Sequence</div><ul><li>${usedMediaListString}</li></ul></div>`;
   html += `<div class='pp-section'><div class='pp-section-header'>Third Party Plugins</div><ul><li>BorisFX, Mocha Pro</li></ul></div>`;
 
   // Insert after output-area
