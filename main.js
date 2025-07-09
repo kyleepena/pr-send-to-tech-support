@@ -251,6 +251,7 @@ async function gatherAndDisplayDetailedInfo() {
   let sequenceFrameRate = 'Unknown';
   let sequenceFrameSize = 'Unknown';
   let usedMediaListString = 'Unknown';
+  let usedCodecsListString = 'Unknown';
   let uniqueCodecs = [];
   let uniqueFormats = [];
   try {
@@ -289,6 +290,7 @@ async function gatherAndDisplayDetailedInfo() {
         /*  BEN ADDED THIS! */
     
         let usedMediaList = new Set(); // Set of used media extensions
+        let usedCodecsList = new Set(); // Set of used codecs
 
         // Get number of Video and Audio tracks to traverse
         let numVideoTracks = await sequence.getVideoTrackCount();
@@ -302,11 +304,31 @@ async function gatherAndDisplayDetailedInfo() {
             let projItem = await currentTrackItemsList[trackItemNum].getProjectItem(); // get the project item of the track item
             let clipProjItem = await require("premierepro").ClipProjectItem.cast(projItem); // cast the project item to its respective clip project item to get much more data!
 
-            let filePath = await clipProjItem.getMediaFilePath();
-            
-            let splitPath = filePath.split('.')
-            usedMediaList.add(splitPath.pop()); // add the media file extension to the used media extensions list
+            if(clipProjItem){
 
+              // Get media item source file extension
+              let filePath = await clipProjItem.getMediaFilePath();
+              let splitPath = filePath.split('.')
+              usedMediaList.add(splitPath.pop()); // add the media file extension to the used media extensions list
+
+              // Get media item codec
+              let { XMPMeta } = require("uxp").xmp;
+              const PPRO_METADATA_URL = "http://ns.adobe.com/premierePrivateProjectMetaData/1.0/";
+
+              let projectItemMetadataFields = await require("premierepro").Metadata.getProjectMetadata(projItem);
+
+              let xmpMetadata = new XMPMeta(projectItemMetadataFields);
+              // If body is not defined by user, use original column value as body
+              let columnNameString = "Column.PropertyText.Codec";
+              if (
+                xmpMetadata.doesPropertyExist(PPRO_METADATA_URL, columnNameString)
+              ) {
+                let foundMetadataValue = xmpMetadata.getProperty(PPRO_METADATA_URL, columnNameString).value;
+                usedCodecsList.add(foundMetadataValue);
+              } else {
+                // do nothing
+              }              
+            }
           }
         } 
 
@@ -323,16 +345,40 @@ async function gatherAndDisplayDetailedInfo() {
               let projItem = await currentTrackItemsList[trackItemNum].getProjectItem(); // get the project item of the track item
               let clipProjItem = await require("premierepro").ClipProjectItem.cast(projItem); // cast the project item to its respective clip project item to get much more data!
 
-              let filePath = await clipProjItem.getMediaFilePath();
-              
-              let splitPath = filePath.split('.')
-              usedMediaList.add(splitPath.pop()); // add the media file extension to the used media extensions list
+              if(clipProjItem){
+                  
+                // Get media item source file extension
+                let filePath = await clipProjItem.getMediaFilePath();
+                let splitPath = filePath.split('.')
+                usedMediaList.add(splitPath.pop()); // add the media file extension to the used media extensions list
 
+                // Get media item codec
+                let { XMPMeta } = require("uxp").xmp;
+                const PPRO_METADATA_URL = "http://ns.adobe.com/premierePrivateProjectMetaData/1.0/";
+
+                let projectItemMetadataFields = await require("premierepro").Metadata.getProjectMetadata(projItem);
+
+                let xmpMetadata = new XMPMeta(projectItemMetadataFields);
+                // If body is not defined by user, use original column value as body
+                let columnNameString = "Column.PropertyText.Codec";
+                if (
+                  xmpMetadata.doesPropertyExist(PPRO_METADATA_URL, columnNameString)
+                ) {
+                  let foundMetadataValue = xmpMetadata.getProperty(PPRO_METADATA_URL, columnNameString).value;
+                  usedCodecsList.add(foundMetadataValue);
+                } else {
+                  // do nothing
+                }  
+              }
             }
           } 
 
-        usedMediaListString = Array.from(usedMediaList).join(', ');  // this is sloppily instantiated with var so that it can be used globally later in the UI Rendering 
-        // usedMediaListString = "Crap!";
+        // Build UI rendereing strings
+        usedMediaListString = Array.from(usedMediaList).join(', '); 
+        usedCodecsListString = Array.from(usedCodecsList).join(', '); ;
+
+
+
         /* --- END BEN STUFF --- */
 
 
@@ -383,7 +429,7 @@ async function gatherAndDisplayDetailedInfo() {
   html += `<div class='pp-section'><div class='pp-section-header'>System</div><ul><li>Platform: ${osPlatform}</li><li>OS Version: ${osVersion}</li><li>Arch: ${osArch}</li><li>GPU: ${gpuInfo}</li></ul></div>`;
   html += `<div class='pp-section'><div class='pp-section-header'>Project</div><ul><li>Name: ${projectName}</li></ul></div>`;
   html += `<div class='pp-section'><div class='pp-section-header'>Sequence Settings</div><ul><li>Name: ${sequenceName}</li><li>Frame Rate: ${sequenceFrameRate}</li><li>Frame Size: ${sequenceFrameSize}</li></ul></div>`;
-  html += `<div class='pp-section'><div class='pp-section-header'>Codecs in Sequence</div><ul><li>H.264, ProRes, AAC</li></ul></div>`;
+  html += `<div class='pp-section'><div class='pp-section-header'>Codecs in Sequence</div><ul><li>${usedCodecsListString}</li></ul></div>`;
   html += `<div class='pp-section'><div class='pp-section-header'>Formats in Sequence</div><ul><li>${usedMediaListString}</li></ul></div>`;
   html += `<div class='pp-section'><div class='pp-section-header'>Third Party Plugins</div><ul><li>BorisFX, Mocha Pro</li></ul></div>`;
 
