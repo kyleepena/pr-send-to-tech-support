@@ -250,6 +250,7 @@ async function gatherAndDisplayDetailedInfo() {
   let sequenceName = 'Unknown';
   let sequenceFrameRate = 'Unknown';
   let sequenceFrameSize = 'Unknown';
+  let usedMediaListString = 'Unknown';
   let uniqueCodecs = [];
   let uniqueFormats = [];
   try {
@@ -283,7 +284,58 @@ async function gatherAndDisplayDetailedInfo() {
       console.log('About to call getUniqueCodecsFromTimeline with sequence:', sequence);
       uniqueCodecs = [];
       if (sequence) {
-        uniqueCodecs = await getUniqueCodecsFromTimeline(sequence);
+        // uniqueCodecs = await getUniqueCodecsFromTimeline(sequence);
+        
+        /*  BEN ADDED THIS! */
+    
+        let usedMediaList = new Set(); // Set of used media extensions
+
+        // Get number of Video and Audio tracks to traverse
+        let numVideoTracks = await sequence.getVideoTrackCount();
+        let numAudioTracks = await sequence.getAudioTrackCount();
+
+        // Traverse through each video track and build list of media
+        for(let trackNum = 0; trackNum < numVideoTracks; trackNum++){  // for each video track
+          let currentVideoTrack = await sequence.getVideoTrack(trackNum);
+          let currentTrackItemsList = await currentVideoTrack.getTrackItems(1, false);
+          for(let trackItemNum = 0; trackItemNum < currentTrackItemsList.length; trackItemNum++){ // for each video track item
+            let projItem = await currentTrackItemsList[trackItemNum].getProjectItem(); // get the project item of the track item
+            let clipProjItem = await require("premierepro").ClipProjectItem.cast(projItem); // cast the project item to its respective clip project item to get much more data!
+
+            let filePath = await clipProjItem.getMediaFilePath();
+            
+            let splitPath = filePath.split('.')
+            usedMediaList.add(splitPath.pop()); // add the media file extension to the used media extensions list
+
+          }
+        } 
+
+        // Traverse through each audio track and build list of media
+        /*  
+          !!! -- This is a sloppy copy of the video track traverse above, just changing some values to reference audio tracks instead
+          !!! -- There is a much more elegant way to do this where the video/audio track items clipProjectItem is source and then sent to a single function
+          !!! -- ... but for the sake of time...
+        */
+          for(let trackNum = 0; trackNum < numAudioTracks; trackNum++){  // for each audio track
+            let currentAudioTrack = await sequence.getAudioTrack(trackNum);
+            let currentTrackItemsList = await currentAudioTrack.getTrackItems(1, false);
+            for(let trackItemNum = 0; trackItemNum < currentTrackItemsList.length; trackItemNum++){ // for each audio track item
+              let projItem = await currentTrackItemsList[trackItemNum].getProjectItem(); // get the project item of the track item
+              let clipProjItem = await require("premierepro").ClipProjectItem.cast(projItem); // cast the project item to its respective clip project item to get much more data!
+
+              let filePath = await clipProjItem.getMediaFilePath();
+              
+              let splitPath = filePath.split('.')
+              usedMediaList.add(splitPath.pop()); // add the media file extension to the used media extensions list
+
+            }
+          } 
+
+        usedMediaListString = Array.from(usedMediaList).join(', ');  // this is sloppily instantiated with var so that it can be used globally later in the UI Rendering 
+        // usedMediaListString = "Crap!";
+        /* --- END BEN STUFF --- */
+
+
       }
       // === Unique formats from all timeline clips ===
       const rootItem = project.getRootItem ? await project.getRootItem() : null;
@@ -313,33 +365,6 @@ async function gatherAndDisplayDetailedInfo() {
               const ppro = require('premierepro');
               const metadata = await ppro.Metadata.getProjectMetadata(clipItem);
               console.log('ProjectItem metadata:', metadata);
-
-              /*  BEN ADDED THIS! */
-              
-              let usedMediaList = new Set(); // Set of used media extensions
-
-              // Get number of Video and Audio tracks to traverse
-              let numVideoTracks = await sequence.getVideoTrackCount();
-              let numAudioTracks = await sequence.getAudioTrackCount();
-
-              // Traverse through each track and build list of media
-              for(let trackNum = 0; trackNum < numVideoTrakcs; i++){  // for each video track
-                let currentVideoTrack = await sequence.getVideoTrack(trackNum);
-                let currentTrackItemsList = await currentVideoTrack.getTrackItems();
-                for(let trackItemNum = 0; trackItemNum < currentTrackItemsList.length, trackItemNum++){ // for each video track item
-                  let projItem = await currentTrackItemsList[trackItemNum].getProjectItem(); // get the project item of the track item
-                  let clipProjItem = await ppro.ClipProjectItem.cast(projItem); // cast the project item to its respective clip project item to get much more data!
-
-                  let filePath = await clipProjItem.getMediaFilePath();
-                  
-                  let splitPath = filePath.split('.')
-                  usedMediaList.add(splitPath.pop()); // add the media file extension to the used media extensions list
-
-                }
-              } 
-
-              var usedMediaListString = Array.from(usedMediaList).join(', ');  // this is sloppily instantiated with var so that it can be used globally later in the UI Rendering 
-              /* --- END BEN STUFF --- */
 
               // You can add parsing here if you see useful info in the logs
             } catch (e) {
