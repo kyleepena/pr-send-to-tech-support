@@ -250,6 +250,8 @@ async function gatherAndDisplayDetailedInfo() {
   let sequenceName = 'Unknown';
   let sequenceFrameRate = 'Unknown';
   let sequenceFrameSize = 'Unknown';
+  let usedMediaListString = 'Unknown';
+  let usedCodecsListString = 'Unknown';
   let uniqueCodecs = [];
   let uniqueFormats = [];
   try {
@@ -283,7 +285,103 @@ async function gatherAndDisplayDetailedInfo() {
       console.log('About to call getUniqueCodecsFromTimeline with sequence:', sequence);
       uniqueCodecs = [];
       if (sequence) {
-        uniqueCodecs = await getUniqueCodecsFromTimeline(sequence);
+        // uniqueCodecs = await getUniqueCodecsFromTimeline(sequence);
+        
+        /*  BEN ADDED THIS! */
+    
+        let usedMediaList = new Set(); // Set of used media extensions
+        let usedCodecsList = new Set(); // Set of used codecs
+
+        // Get number of Video and Audio tracks to traverse
+        let numVideoTracks = await sequence.getVideoTrackCount();
+        let numAudioTracks = await sequence.getAudioTrackCount();
+
+        // Traverse through each video track and build list of media
+        for(let trackNum = 0; trackNum < numVideoTracks; trackNum++){  // for each video track
+          let currentVideoTrack = await sequence.getVideoTrack(trackNum);
+          let currentTrackItemsList = await currentVideoTrack.getTrackItems(1, false);
+          for(let trackItemNum = 0; trackItemNum < currentTrackItemsList.length; trackItemNum++){ // for each video track item
+            let projItem = await currentTrackItemsList[trackItemNum].getProjectItem(); // get the project item of the track item
+            let clipProjItem = await require("premierepro").ClipProjectItem.cast(projItem); // cast the project item to its respective clip project item to get much more data!
+
+            if(clipProjItem){
+
+              // Get media item source file extension
+              let filePath = await clipProjItem.getMediaFilePath();
+              let splitPath = filePath.split('.')
+              usedMediaList.add(splitPath.pop()); // add the media file extension to the used media extensions list
+
+              // Get media item codec
+              let { XMPMeta } = require("uxp").xmp;
+              const PPRO_METADATA_URL = "http://ns.adobe.com/premierePrivateProjectMetaData/1.0/";
+
+              let projectItemMetadataFields = await require("premierepro").Metadata.getProjectMetadata(projItem);
+
+              let xmpMetadata = new XMPMeta(projectItemMetadataFields);
+              // If body is not defined by user, use original column value as body
+              let columnNameString = "Column.PropertyText.Codec";
+              if (
+                xmpMetadata.doesPropertyExist(PPRO_METADATA_URL, columnNameString)
+              ) {
+                let foundMetadataValue = xmpMetadata.getProperty(PPRO_METADATA_URL, columnNameString).value;
+                usedCodecsList.add(foundMetadataValue);
+              } else {
+                // do nothing
+              }              
+            }
+          }
+        } 
+
+        // Traverse through each audio track and build list of media
+        /*  
+          !!! -- This is a sloppy copy of the video track traverse above, just changing some values to reference audio tracks instead
+          !!! -- There is a much more elegant way to do this where the video/audio track items clipProjectItem is source and then sent to a single function
+          !!! -- ... but for the sake of time...
+        */
+          for(let trackNum = 0; trackNum < numAudioTracks; trackNum++){  // for each audio track
+            let currentAudioTrack = await sequence.getAudioTrack(trackNum);
+            let currentTrackItemsList = await currentAudioTrack.getTrackItems(1, false);
+            for(let trackItemNum = 0; trackItemNum < currentTrackItemsList.length; trackItemNum++){ // for each audio track item
+              let projItem = await currentTrackItemsList[trackItemNum].getProjectItem(); // get the project item of the track item
+              let clipProjItem = await require("premierepro").ClipProjectItem.cast(projItem); // cast the project item to its respective clip project item to get much more data!
+
+              if(clipProjItem){
+                  
+                // Get media item source file extension
+                let filePath = await clipProjItem.getMediaFilePath();
+                let splitPath = filePath.split('.')
+                usedMediaList.add(splitPath.pop()); // add the media file extension to the used media extensions list
+
+                // Get media item codec
+                let { XMPMeta } = require("uxp").xmp;
+                const PPRO_METADATA_URL = "http://ns.adobe.com/premierePrivateProjectMetaData/1.0/";
+
+                let projectItemMetadataFields = await require("premierepro").Metadata.getProjectMetadata(projItem);
+
+                let xmpMetadata = new XMPMeta(projectItemMetadataFields);
+                // If body is not defined by user, use original column value as body
+                let columnNameString = "Column.PropertyText.Codec";
+                if (
+                  xmpMetadata.doesPropertyExist(PPRO_METADATA_URL, columnNameString)
+                ) {
+                  let foundMetadataValue = xmpMetadata.getProperty(PPRO_METADATA_URL, columnNameString).value;
+                  usedCodecsList.add(foundMetadataValue);
+                } else {
+                  // do nothing
+                }  
+              }
+            }
+          } 
+
+        // Build UI rendereing strings
+        usedMediaListString = Array.from(usedMediaList).join(', '); 
+        usedCodecsListString = Array.from(usedCodecsList).join(', '); ;
+
+
+
+        /* --- END BEN STUFF --- */
+
+
       }
       // === Unique formats from all timeline clips ===
       const rootItem = project.getRootItem ? await project.getRootItem() : null;
@@ -313,6 +411,7 @@ async function gatherAndDisplayDetailedInfo() {
               const ppro = require('premierepro');
               const metadata = await ppro.Metadata.getProjectMetadata(clipItem);
               console.log('ProjectItem metadata:', metadata);
+
               // You can add parsing here if you see useful info in the logs
             } catch (e) {
               console.log('Error getting ProjectItem metadata:', e);
@@ -330,8 +429,8 @@ async function gatherAndDisplayDetailedInfo() {
   html += `<div class='pp-section'><div class='pp-section-header'>System</div><ul><li>Platform: ${osPlatform}</li><li>OS Version: ${osVersion}</li><li>Arch: ${osArch}</li><li>GPU: ${gpuInfo}</li></ul></div>`;
   html += `<div class='pp-section'><div class='pp-section-header'>Project</div><ul><li>Name: ${projectName}</li></ul></div>`;
   html += `<div class='pp-section'><div class='pp-section-header'>Sequence Settings</div><ul><li>Name: ${sequenceName}</li><li>Frame Rate: ${sequenceFrameRate}</li><li>Frame Size: ${sequenceFrameSize}</li></ul></div>`;
-  html += `<div class='pp-section'><div class='pp-section-header'>Codecs in Sequence</div><ul><li>H.264, ProRes, AAC</li></ul></div>`;
-  html += `<div class='pp-section'><div class='pp-section-header'>Formats in Sequence</div><ul><li>mov, mp4, wav</li></ul></div>`;
+  html += `<div class='pp-section'><div class='pp-section-header'>Codecs in Sequence</div><ul><li>${usedCodecsListString}</li></ul></div>`;
+  html += `<div class='pp-section'><div class='pp-section-header'>Formats in Sequence</div><ul><li>${usedMediaListString}</li></ul></div>`;
   html += `<div class='pp-section'><div class='pp-section-header'>Third Party Plugins</div><ul><li>BorisFX, Mocha Pro</li></ul></div>`;
 
   // Insert after output-area
