@@ -15,7 +15,7 @@
   * Premiere version
   * OS and version, CPU, GPU/driver info (GPU is mocked)
   * Sequence settings including frame size and frame rate
-  * Media in sequence (mocked)
+  * Media in sequence
   * Third party plugins (mocked)
 
 * ✅ Copy to Clipboard
@@ -26,7 +26,7 @@
 
 ## 🧪 Current Status
 
-This is an Innovation Week prototype. Some data is currently mocked for demonstration purposes, but the panel structure is built to support real API integrations as UXP permissions allow.
+This is an Innovation Week prototype. Some data is currently mocked for demonstration purposes, but the panel structure is built to support real API integrations as UXP permissions allow. Additionally, the panel does not yet dynamically update with each new sequence.
 
 ---
 
@@ -46,7 +46,7 @@ send-to-tech-support/
 ## 🚀 How to Use
 
 1. Clone this repo to your local machine.
-2. Open [UXP Developer Tool](https://developer.adobe.com/uxp/devtools/).
+2. Open [UXP Developer Tool](https://developer.adobe.com/photoshop/uxp/2022/guides/devtool/).
 3. Load this plugin into Premiere Pro.
 4. Open the panel under `Window > Extensions (UXP) > Send to Tech Support`.
 5. Copy to clipboard.
@@ -56,7 +56,7 @@ send-to-tech-support/
 
 ## 🎯 Future Plans
 
-* Swap mock data with real system/API values as access expands
+* Swap remaining mock data with real system/API values as access expands
 * Add capability to package up a copy of the project, related logs, screenshot, and more.
 * Add auto-formatting for Reddit, Adobe Forums, or support tickets
 
