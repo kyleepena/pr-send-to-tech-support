@@ -20,7 +20,14 @@
 
 * ✅ Copy to Clipboard
 
-* Upon paste, four additional questions are added for the user to complete when posting for support online.
+Upon paste, four additional questions are added for the user to complete when posting for support online:
+
+* Issue: (A short description of the problem)
+* Steps to Reproduce: (A numbered list of the exact steps needed to hit this issue.)
+* Expected Result: (What should happen.)
+* Actual Result: (What does happen.)
+
+![Panel Image](https://github.com/kyleepena/pr-send-to-tech-support/blob/main/PanelImage.png)
 
 ---
 
